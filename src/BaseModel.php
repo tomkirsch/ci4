@@ -308,7 +308,7 @@ class BaseModel extends Model{
 	
 	// strip namespace out of model class names. Hoping this doesn't cause issues down the road.
 	protected function prepClassName(string $className):string{
-		if ($pos = strrpos($className, '\\')) return substr($className, $pos + 1);
-    	return $pos;
+		if($pos = strrpos($className, '\\')) return substr($className, $pos + 1);
+    	return $className;
 	}
 }
