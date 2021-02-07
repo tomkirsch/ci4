@@ -268,7 +268,12 @@ class BaseModel extends Model{
 		All the table's columns are selected by default with unique fields. This lets you only choose the ones you want.
 		You can also pass the fields in selectUnique(), but this method allows you to specify which model to filter.
 		If the $modelName is omitted, ALL fields NOT in the passed array will be removed!
-		$myModel->joinModel('fooModel')->filterUnique(['foo_id', 'foo_created']); // only select these two fields
+		
+		// only select these two fields from EVERYTHING
+		$fooModel->joinModel('barModel')->filterUnique(['foo_id', 'bar_id']); 
+		
+		// only select these two fields from FooModel, leaving other data intact
+		$fooModel->joinModel('barModel')->addUniqueSelf()->filterUnique(['foo_id', 'foo_created'], 'FooModel') 
 	*/
 	public function filterUnique(array $fields, ?string $modelName=NULL){
 		if($modelName) $modelName = $this->prepClassName($modelName);
@@ -312,7 +317,8 @@ class BaseModel extends Model{
 		return $this;
 	}
 	
-	// strip namespace out of model class names. Hoping this doesn't cause issues down the road.
+	// Strip namespace out of model class names. Needed because get_class() might return FQN, but users just pass simple model name. 
+	// Hoping this doesn't cause issues down the road.
 	protected function prepClassName(string $className):string{
 		if($pos = strrpos($className, '\\')) return substr($className, $pos + 1);
     	return $className;
