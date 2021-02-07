@@ -265,14 +265,15 @@ class BaseModel extends Model{
 	}
 	
 	/*
-		All the table's columns are selected by default with unique fields. This lets you filter out ones you don't want.
-		If th $modelName is omitted, ALL fields not in the passed array will be removed
+		All the table's columns are selected by default with unique fields. This lets you only choose the ones you want.
+		You can also pass the fields in selectUnique(), but this method allows you to specify which model to filter.
+		If the $modelName is omitted, ALL fields NOT in the passed array will be removed!
 		$myModel->joinModel('fooModel')->filterUnique(['foo_id', 'foo_created']); // only select these two fields
 	*/
 	public function filterUnique(array $fields, ?string $modelName=NULL){
 		if($modelName) $modelName = $this->prepClassName($modelName);
 		foreach($this->uniqueFields as $model=>$set){
-			if($modelName && $modelName !== $model) continue; // set is from a different model, skip
+			if($modelName && $modelName !== $model) continue; // this set is from a different model, skip
 			$this->uniqueFields[$model] = array_intersect($this->uniqueFields[$model], $fields);
 		}
 		return $this;
