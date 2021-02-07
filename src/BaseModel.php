@@ -269,8 +269,9 @@ class BaseModel extends Model{
 		$myModel->joinModel('fooModel')->filterUnique(['foo_id', 'foo_created']); // only select these two fields
 	*/
 	public function filterUnique(array $fields, ?string $modelName=NULL){
+		if($modelName) $modelName = $this->prepClassName($modelName);
 		foreach($this->uniqueFields as $model=>$set){
-			if($modelName && $modelName === $model) continue; // set is from a different model, skip
+			if($modelName && $modelName !== $model) continue; // set is from a different model, skip
 			$this->uniqueFields[$model] = array_intersect($this->uniqueFields[$model], $fields);
 		}
 		return $this;
@@ -301,10 +302,13 @@ class BaseModel extends Model{
 	
 	// utility - add a set of unique fields
 	protected function addUniqueSet(string $modelName, array $uniqueFields){
-		// strip namespace out of modelName. Hoping this doesn't cause issues down the road.
-		if($pos = strrpos($modelName, '\\')) $modelName = substr($modelName, $pos + 1);
-		$this->uniqueFields[$modelName] = $uniqueFields;
+		$this->uniqueFields[$this->prepClassName($modelName)] = $uniqueFields;
 		return $this;
 	}
 	
+	// strip namespace out of model class names. Hoping this doesn't cause issues down the road.
+	protected function prepClassName(string $className):string{
+		if ($pos = strrpos($className, '\\')) return substr($className, $pos + 1);
+    	return $pos;
+	}
 }
