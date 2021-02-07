@@ -266,6 +266,7 @@ class BaseModel extends Model{
 	
 	/*
 		All the table's columns are selected by default with unique fields. This lets you filter out ones you don't want.
+		If th $modelName is omitted, ALL fields not in the passed array will be removed
 		$myModel->joinModel('fooModel')->filterUnique(['foo_id', 'foo_created']); // only select these two fields
 	*/
 	public function filterUnique(array $fields, ?string $modelName=NULL){
@@ -278,10 +279,14 @@ class BaseModel extends Model{
 	}
 	
 	// call this after all unique fields have been configured
-	public function selectUnique(bool $selectThisTable=TRUE){
+	public function selectUnique(?array $fields=NULL, bool $selectThisTable=TRUE){
 		// usually, we want to select this model's data
 		if($selectThisTable){
 			$this->addUniqueSelf();
+		}
+		// were fields passed? then only get those
+		if(!empty($fields)){
+			$this->filterUnique($fields);
 		}
 		// loop through the sets and pick out the unique field names. 
 		// we use "sets" so that we can overwrite columns with the last one specified in the chain
