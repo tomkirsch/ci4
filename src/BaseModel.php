@@ -206,6 +206,12 @@ class BaseModel extends Model{
 		$this->join($tableOrSql, $clause, $join, $escape);
 		foreach($uniqueFields as $modelName=>$set){
 			$dict = [];
+			// ensure we don't overwrite stuff with the modelName key
+			$baseModelName = $modelName;
+			$i=0;
+			while(isset($this->uniqueFields[$modelName])){
+				$modelName = $baseModelName.(++$i);
+			}
 			foreach($set as $col=>$field){
 				if(!empty($alias)){
 					// alter this to use the given alias/prefix
