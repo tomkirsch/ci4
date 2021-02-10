@@ -276,16 +276,25 @@ class BaseModel extends Model{
 		If the $modelName is omitted, ALL fields NOT in the passed array will be removed!
 		
 		// only select these two fields from EVERYTHING
-		$fooModel->joinModel('barModel')->filterUnique(['foo_id', 'bar_id']); 
+		$fooModel->joinModel('BarModel')->filterUnique(['foo_id', 'bar_id']); 
 		
 		// only select these two fields from FooModel, leaving other data intact
-		$fooModel->joinModel('barModel')->addUniqueSelf()->filterUnique(['foo_id', 'foo_created'], 'FooModel') 
+		$fooModel->joinModel('BarModel')->addUniqueSelf()->filterUnique(['foo_id', 'foo_created'], 'FooModel') 
+		
+		// remove ALL selects for BarModel and just do the join
+		$fooModel->joinModel('BarModel')->filterUnique([], 'BarModel')
 	*/
 	public function filterUnique(array $fields, ?string $modelName=NULL){
 		if($modelName) $modelName = $this->prepClassName($modelName);
 		foreach($this->uniqueFields as $model=>$set){
 			if($modelName && $modelName !== $model) continue; // this set is from a different model, skip
-			$this->uniqueFields[$model] = array_intersect($this->uniqueFields[$model], $fields);
+			// was an empty array passed?
+			if(empty($fields)){
+				unset($this->uniqueFields[$model]);
+			}else{
+				// otherwise we intersect
+				$this->uniqueFields[$model] = array_intersect($this->uniqueFields[$model], $fields);
+			}
 		}
 		return $this;
 	}
