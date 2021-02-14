@@ -15,7 +15,7 @@ class BaseEntity extends Entity{
 		return $this;
 	}
 	public function applyLocalTimezone(array $attributes=[]){
-		$config = config('Opacity');
+		$config = config('App');
 		return $this->applyTimezone($config->localTimezone, $attributes);
 	}
 	public function applyServerTimezone(array $attributes=[]){
@@ -45,6 +45,9 @@ class BaseEntity extends Entity{
 			foreach($temp as $prop => $values){
 				$obj->{$prop} = $values[$i] ?? NULL;
 			}
+			if(is_a($obj, '\CodeIgniter\Entity')){
+				$obj->syncOriginal(); // we assume the data comes from the DB and thus hasn't been changed
+			}
 			$result[] = $obj;
 		}
 		return $result;
@@ -69,7 +72,10 @@ class BaseEntity extends Entity{
 				}
 			}
 		}
-		$entity = new $className($attr);
+		$entity = new $className();
+		if(is_a($entity, '\CodeIgniter\Entity')){
+			$entity->setAttributes($attr); // using this method makes the attributes "original", ie. not changed from database
+		}
 		return $entity;
 	}
 	
@@ -81,5 +87,6 @@ class BaseEntity extends Entity{
 				unset($this->attributes[$attr]);
 			}
 		}
+		$this->syncOriginal();
 	}
 }
