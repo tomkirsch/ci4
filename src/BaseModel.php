@@ -206,12 +206,6 @@ class BaseModel extends Model{
 		$this->join($tableOrSql, $clause, $join, $escape);
 		foreach($uniqueFields as $modelName=>$set){
 			$dict = [];
-			// ensure we don't overwrite stuff with the modelName key
-			$baseModelName = $modelName;
-			$i=0;
-			while(isset($this->uniqueFields[$modelName])){
-				$modelName = $baseModelName.(++$i);
-			}
 			foreach($set as $col=>$field){
 				if(!empty($alias)){
 					// alter this to use the given alias/prefix
@@ -287,7 +281,13 @@ class BaseModel extends Model{
 	public function filterUnique(array $fields, ?string $modelName=NULL){
 		if($modelName) $modelName = $this->prepClassName($modelName);
 		foreach($this->uniqueFields as $model=>$set){
-			if($modelName && $modelName !== $model) continue; // this set is from a different model, skip
+			// was a model name specified to target?
+			if($modelName){
+				// check for the dash in case we used the model more than once
+				$pos = strpos($model, '-');
+				$compareName = $pos ? substr($model, 0, $pos) : $model;
+				if($modelName !== $compareName) continue; // this set is from a different model, skip
+			}
 			// was an empty array passed?
 			if(empty($fields)){
 				unset($this->uniqueFields[$model]);
@@ -328,7 +328,14 @@ class BaseModel extends Model{
 	
 	// utility - add a set of unique fields
 	protected function addUniqueSet(string $modelName, array $uniqueFields){
-		$this->uniqueFields[$this->prepClassName($modelName)] = $uniqueFields;
+		$modelName = $this->prepClassName($modelName);
+		// ensure we don't overwrite stuff with the modelName key
+		$baseModelName = $modelName;
+		$i=0;
+		while(isset($this->uniqueFields[$modelName])){
+			$modelName = $baseModelName.'-'.(++$i);
+		}
+		$this->uniqueFields[$modelName] = $uniqueFields;
 		return $this;
 	}
 	
