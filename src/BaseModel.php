@@ -281,12 +281,11 @@ class BaseModel extends Model{
 	public function filterUnique(array $fields, ?string $modelName=NULL){
 		if($modelName) $modelName = $this->prepClassName($modelName);
 		foreach($this->uniqueFields as $model=>$set){
-			// was a model name specified to target?
 			if($modelName){
-				// check for the dash in case we used the model more than once
-				$pos = strpos($model, '-');
-				$compareName = $pos ? substr($model, 0, $pos) : $model;
-				if($modelName !== $compareName) continue; // this set is from a different model, skip
+				// if user joined a model more than once, it'll be suffixed with a number
+				if(!preg_match("/$modelName(\d?)/")){
+					continue; // this set is from a different model, skip
+				}
 			}
 			// was an empty array passed?
 			if(empty($fields)){
@@ -333,7 +332,7 @@ class BaseModel extends Model{
 		$baseModelName = $modelName;
 		$i=0;
 		while(isset($this->uniqueFields[$modelName])){
-			$modelName = $baseModelName.'-'.(++$i);
+			$modelName = $baseModelName.(++$i);
 		}
 		$this->uniqueFields[$modelName] = $uniqueFields;
 		return $this;
