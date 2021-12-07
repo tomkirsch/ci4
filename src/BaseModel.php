@@ -158,6 +158,7 @@ class BaseModel extends Model{
 		$otherTable = $otherModel->table();
 		
 		if(empty($clause)){
+			if(!$this->primaryKey) throw new \Exception("You must supply a join clause on a model with no primaryKey.");
 			$clause = "$this->table.$this->primaryKey = $otherTable.$this->primaryKey";
 		}
 		if(empty($alias)){
