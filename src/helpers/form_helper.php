@@ -1,7 +1,7 @@
 <?php 
 // properly transform variables into strings (such as DateTime) for comparison to POST
 // requires date_helper
-function make_string($val, array $options):string{
+function make_string($val, array $options=[]):string{
 	if(is_string($val)) return $val;
 	if(is_null($val)) return '';
 	if(is_bool($val)) return $val ? '1' : '0';
