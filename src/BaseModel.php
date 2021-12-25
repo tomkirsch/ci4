@@ -79,6 +79,14 @@ class BaseModel extends Model{
 		}
 	}
 	
+	// expose pk, prefix
+	public function primaryKey():?string{
+		return $this->primaryKey;
+	}
+	public function prefix():?string{
+		return $this->prefix;
+	}
+	
 	// get the next autoincrement
 	public function nextAutoIncrement():int{
 		$dbName = $this->getDatabase();
@@ -324,6 +332,33 @@ class BaseModel extends Model{
 		}
 		// don't reset uniqueFields here, as you may need them for subqueries
 		return $this;
+	}
+	
+	// use nested subqueries to get the last row in another table. These tables MUST be properly indexed to run fast!!!
+	// $this->selectLastRow('ph_year', 'phs', 'ph_year');
+	// $this->selectLastRow('widget_id AS firstid', 'widgets', 'widget_date', 'MIN');
+	protected function selectLastRow(string $selectField, string $remoteTable, string $whereField, string $operator = 'MAX', string $joins = '', ?string $table = NULL){
+		$table = $table ?? $this->table;
+		// figure out the alias
+		if ($pos = strpos($selectField, ' AS ')) {
+			$alias = substr($selectField, $pos + 4);
+			$selectField = substr($selectField, 0, $pos);
+		} else if ($pos = strpos($selectField, '.')) {
+			$alias = substr($selectField, $pos + 1);
+		} else {
+			$alias = $selectField;
+		}
+		$innerSelect = $this->db->table($remoteTable)
+			->select("$operator($whereField)", FALSE) // MAX / MIN
+			->where("$remoteTable.$this->primaryKey", "$table.$this->primaryKey", FALSE)
+			->getCompiledSelect();
+		return $this->select("
+(
+	SELECT $selectField 
+	FROM $remoteTable $joins 
+	WHERE $remoteTable.$this->primaryKey = $table.$this->primaryKey 
+	AND $whereField IN($innerSelect)
+) AS $alias", FALSE);
 	}
 	
 	// utility - add a set of unique fields
