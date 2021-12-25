@@ -1,6 +1,6 @@
 <?php namespace Tomkirsch\Crud;
 
-use CodeIgniter\Entity\Entity; // if changing inheritance, ensure class name strings are replaced with is_a()!
+use CodeIgniter\Entity\Entity; // if changing inheritance, ensure class name strings are replaced in this class, form_helper, etc
 
 class BaseEntity extends Entity{
 	// make empty strings into NULL values. Useful when filling from html form data

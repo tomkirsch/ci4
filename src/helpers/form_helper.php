@@ -36,7 +36,7 @@ function get_obj_value($obj, $prop, $default=NULL){
 	if(empty($obj)){
 		return $default;
 	}
-	if(is_a($obj, '\CodeIgniter\Entity')){
+	if(is_a($obj, '\CodeIgniter\Entity\Entity')){
 		// Entities use magic methods, which will return FALSE on property_exists()
 		// if we convert it to an array, then we can just use array_key_exists()
 		$obj = $obj->toArray();
