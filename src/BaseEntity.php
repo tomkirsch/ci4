@@ -1,6 +1,6 @@
 <?php namespace Tomkirsch\Crud;
 
-use CodeIgniter\Entity;
+use CodeIgniter\Entity\Entity;
 
 class BaseEntity extends Entity{
 	// make empty strings into NULL values. Useful when filling from html form data
