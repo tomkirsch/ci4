@@ -5,8 +5,9 @@ use CodeIgniter\Entity\Entity;
 class BaseEntity extends Entity{
 	// make empty strings into NULL values. Useful when filling from html form data
 	// if certain fields are allowed to have empty strings, pass as second parameter
-	public function fillNullEmpty(array $data = NULL, array $emptyAllowedFields = [])
+	public function fillNullEmpty(?array $data = NULL, array $emptyAllowedFields = [])
 	{
+		if(!is_array($data)) return $this;
 		foreach ($data as $key => $val) {
 			if ($val === '' && !in_array($key, $emptyAllowedFields)) $data[$key] = NULL;
 		}
