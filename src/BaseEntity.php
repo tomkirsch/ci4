@@ -1,6 +1,6 @@
 <?php namespace Tomkirsch\Crud;
 
-use CodeIgniter\Entity\Entity;
+use CodeIgniter\Entity\Entity; // if changing inheritance, ensure class name strings are replaced with is_a()!
 
 class BaseEntity extends Entity{
 	// make empty strings into NULL values. Useful when filling from html form data
@@ -18,7 +18,7 @@ class BaseEntity extends Entity{
 	public function applyTimezone(string $timezone, array $attributes=[]){
 		// apply casts to make Time instances
 		foreach($this->toArray() as $key=>$val){
-			if(!is_a($val, 'CodeIgniter\I18n\Time')) continue;
+			if(!is_a($val, '\CodeIgniter\I18n\Time')) continue;
 			if(!empty($attributes) && !in_array($key, $attributes)) continue;
 			$this->$key = $val->setTimezone($timezone);
 		}
@@ -55,7 +55,7 @@ class BaseEntity extends Entity{
 			foreach($temp as $prop => $values){
 				$obj->{$prop} = $values[$i] ?? NULL;
 			}
-			if(is_a($obj, '\CodeIgniter\Entity')){
+			if(is_a($obj, '\CodeIgniter\Entity\Entity')){
 				$obj->syncOriginal(); // we assume the data comes from the DB and thus hasn't been changed
 			}
 			$result[] = $obj;
@@ -83,7 +83,7 @@ class BaseEntity extends Entity{
 			}
 		}
 		$entity = new $className();
-		if(is_a($entity, '\CodeIgniter\Entity')){
+		if(is_a($entity, '\CodeIgniter\Entity\Entity')){
 			$entity->setAttributes($attr); // using this method makes the attributes "original", ie. not changed from database
 		}
 		return $entity;
