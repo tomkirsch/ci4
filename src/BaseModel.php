@@ -339,29 +339,61 @@ class BaseModel extends Model{
 	// use nested subqueries to get the last row in another table. These tables MUST be properly indexed to run fast!!!
 	// $this->selectLastRow('ph_year', 'phs', 'ph_year');
 	// $this->selectLastRow('widget_id AS firstid', 'widgets', 'widget_date', 'MIN');
-	protected function selectLastRow(string $selectField, string $remoteTable, string $whereField, string $operator = 'MAX', string $joins = '', ?string $table = NULL){
+	public function selectLastRow(string $selectField, string $remoteTable, string $whereField, string $operator = 'MAX', string $joins = '', ?string $table = NULL, ?string $commonKey = NULL)
+	{
 		$table = $table ?? $this->table;
 		// figure out the alias based on selectField
 		if ($pos = strpos($selectField, ' AS ')) {
 			$alias = substr($selectField, $pos + 4);
-			$selectField = substr($selectField, 0, $pos);
+			$selectField = substr($selectField, 0, $pos); // remove it from selectField
 		} else if ($pos = strpos($selectField, '.')) {
 			$alias = substr($selectField, $pos + 1);
 		} else {
 			$alias = $selectField;
 		}
-		$innerSelect = $this->db->table($remoteTable)
-			->select("$operator($whereField)", FALSE) // MAX / MIN
-			->where("$remoteTable.$this->primaryKey", "$table.$this->primaryKey", FALSE)
-			->getCompiledSelect();
-		return $this->select("
-(
-	SELECT $selectField 
-	FROM $remoteTable $joins 
-	WHERE $remoteTable.$this->primaryKey = $table.$this->primaryKey 
-	AND $whereField IN($innerSelect)
-) AS $alias", FALSE);
+		$outerSelect = $this->selectLastRowOuter($selectField, $remoteTable, $whereField, $operator, $joins, $table, $commonKey);
+		return $this->select("($outerSelect) AS $alias", FALSE);
 	}
+
+	/*
+		SELECT $selectField 
+		FROM $remoteTable 
+		$joins 
+		WHERE $remoteTable.$commonKey= $table.$commonKey 
+		AND $whereField IN($innerSelect)
+	*/
+	public function selectLastRowOuter(string $selectField, string $remoteTable, string $whereField, string $operator = 'MAX', string $joins = '', ?string $table = NULL, ?string $commonKey = NULL): string
+	{
+		$table = $table ?? $this->table;
+		$commonKey = $commonKey ?? $this->primaryKey;
+		$innerSelect = $this->selectLastRowInner($remoteTable, $whereField, $operator, $table, $commonKey);
+		return "
+SELECT $selectField 
+FROM $remoteTable 
+$joins 
+WHERE $remoteTable.$commonKey= $table.$commonKey 
+AND $whereField IN($innerSelect)
+";
+	}
+	/*
+		SELECT (SELECT MAX($field)
+		FROM `$remoteTable` AS `$remoteTable_inner`
+		WHERE $remoteTable_inner.$commonKey = $table.$commonKey
+	*/
+	public function selectLastRowInner(string $remoteTable, string $field, string $operator = 'MAX', ?string $table = NULL, ?string $commonKey = NULL): string
+	{
+		$table = $table ?? $this->table;
+		$commonKey = $commonKey ?? $this->primaryKey;
+		// always use an alias, in case we ever need to self-join tables
+		$alias = $remoteTable . '_inner';
+		// ensure we use alias in whereField - the dot ensures we're replacing a table name
+		$field = str_replace($remoteTable . '.', $alias . '.', $field);
+		return $this->db->table("$remoteTable AS $alias")
+			->select("$operator($field)", FALSE) // MAX / MIN
+			->where("$alias.$commonKey", "$table.$commonKey", FALSE) // $table will be read by the OUTER query - MAGIC!
+			->getCompiledSelect();
+	}
+	
 	
 	// utility - add a set of unique fields
 	protected function addUniqueSet(string $modelName, array $uniqueFields){
