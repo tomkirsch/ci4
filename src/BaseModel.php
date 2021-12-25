@@ -5,6 +5,8 @@
 */
 use CodeIgniter\I18n\Time;
 use CodeIgniter\Model;
+use CodeIgniter\Database\ConnectionInterface;
+use CodeIgniter\Validation\ValidationInterface;
 
 class BaseModel extends Model{
 	protected $uniqueFields		= [];		// unique field functionality, see joinModel()
@@ -339,7 +341,7 @@ class BaseModel extends Model{
 	// $this->selectLastRow('widget_id AS firstid', 'widgets', 'widget_date', 'MIN');
 	protected function selectLastRow(string $selectField, string $remoteTable, string $whereField, string $operator = 'MAX', string $joins = '', ?string $table = NULL){
 		$table = $table ?? $this->table;
-		// figure out the alias
+		// figure out the alias based on selectField
 		if ($pos = strpos($selectField, ' AS ')) {
 			$alias = substr($selectField, $pos + 4);
 			$selectField = substr($selectField, 0, $pos);
