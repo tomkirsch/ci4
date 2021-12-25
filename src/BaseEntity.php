@@ -3,6 +3,15 @@
 use CodeIgniter\Entity;
 
 class BaseEntity extends Entity{
+	// make empty strings into NULL values. Useful when filling from html form data
+	// if certain fields are allowed to have empty strings, pass as second parameter
+	public function fillNullEmpty(array $data = NULL, array $emptyAllowedFields = [])
+	{
+		foreach ($data as $key => $val) {
+			if ($val === '' && !in_array($key, $emptyAllowedFields)) $data[$key] = NULL;
+		}
+		return parent::fill($data);
+	}
 	
 	// apply timezones to non-empty dates. Note that you do NOT need to do this with <input type="datetime-local">
 	public function applyTimezone(string $timezone, array $attributes=[]){
