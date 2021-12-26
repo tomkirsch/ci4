@@ -9,6 +9,16 @@ use CodeIgniter\Database\ConnectionInterface;
 use CodeIgniter\Validation\ValidationInterface;
 
 class BaseModel extends Model{
+	
+	public static function makeDictionary(array $list, string $idField):array{
+		$dict = [];
+		foreach($list as $item){
+			$id = is_array($item) ? $item[$idField] : $item->{$idField};
+			$dict[$id] = $item;
+		}
+		return $dict;
+	}
+	
 	protected $uniqueFields		= [];		// unique field functionality, see joinModel()
 	
 	protected $prefix; 						// prefix to be used in all regular DB fields (ex: 'user_')
@@ -109,14 +119,9 @@ class BaseModel extends Model{
 	}
 	
 	// utility - create an associative array using primary keys
-	public function getDictionary(array $list, bool $isObject=TRUE): array{
+	public function getDictionary(array $list): array{
 		if(!$this->primaryKey) throw new \Exception("Cannot use getDictionary() on a model with no primaryKey.");
-		$dict = [];
-		foreach($list as $item){
-			$id = $isObject ? $item->{$this->primaryKey} : $item[$this->primaryKey];
-			$dict[$id] = $item;
-		}
-		return $dict;
+		return self::makeDictionary($list, $this->primaryKey);
 	}
 	
 	/*
