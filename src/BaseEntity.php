@@ -40,7 +40,7 @@ class BaseEntity extends Entity{
 		$longest = 0;
 		foreach($map as $attr => $newProp){
 			if(!isset($temp[$newProp])) $temp[$newProp] = [];
-			if(!isset($this->attributes[$attr])){
+			if(!property_exists($this->attributes, $attr)){
 				throw new \Exception("Entity does not have '$attr' attribute (check database select)");
 			}
 			if(empty($this->attributes[$attr])){
