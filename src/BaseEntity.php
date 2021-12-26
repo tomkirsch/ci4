@@ -68,7 +68,7 @@ class BaseEntity extends Entity{
 	
 	// find all attributes with prefix(es) and return a new entity with those attributes
 	// ex: $image = $entity->prefixMap(['image_', 'upload_'], '\App\Entities\Image');
-	public function prefixMap($prefixes, string $className='object', $removePrefix=FALSE){
+	public function prefixMap($prefixes, string $className='object', $removePrefix=FALSE, $removeAttr=FALSE){
 		if(!is_array($prefixes)){
 			$prefixes = [$prefixes];
 		}
@@ -82,6 +82,9 @@ class BaseEntity extends Entity{
 						$key = substr($key, $prefixLen);
 					}
 					$attr[$key] = $val;
+					if($removeAttr){
+						unset($this->attributes[$key]);
+					}
 				}
 			}
 		}

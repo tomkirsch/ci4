@@ -137,6 +137,12 @@ class BaseModel extends Model{
 			$old_ids = empty($old_ids) ? [] : explode(',', $old_ids);
 		}
 		$insert = array_diff($ids, $old_ids);
+		$delete = array_diff($old_ids, $ids);
+		
+		if(count($delete)){
+			$this->db->table($lookuptable)->where($common_data)->whereIn($remote_id_field, $delete)->delete();
+		}
+		
 		if(count($insert)){
 			$data = [];
 			foreach($insert as $id){
@@ -144,10 +150,7 @@ class BaseModel extends Model{
 			}
 			$this->db->table($lookuptable)->insertBatch($data);
 		}
-		$delete = array_diff($old_ids, $ids);
-		if(count($delete)){
-			$this->db->table($lookuptable)->where($common_data)->whereIn($remote_id_field, $delete)->delete();
-		}
+		
 		return [
 			'inserted'=>$insert,
 			'deleted'=>$delete,
