@@ -95,7 +95,7 @@ class BaseEntity extends Entity{
 		}
 		// delete attributes
 		if($deleteAttr){
-			$newAttr = clone $this->attributes;
+			$newAttr = $this->attributes;
 			foreach($this->attributes as $key=>$val){
 				if(in_array($key, $deleteAttr)){
 					unset($newAttr[$key]);
@@ -107,7 +107,7 @@ class BaseEntity extends Entity{
 	}
 	
 	public function stripAliasPrefix(string $aliasPrefix){
-		$newAttr = clone $this->attributes;
+		$newAttr = $this->attributes;
 		$prefixLen = strlen($aliasPrefix);
 		foreach($this->attributes as $attr=>$val){
 			if(substr($attr, 0, $prefixLen) === $aliasPrefix){
