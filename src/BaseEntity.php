@@ -35,7 +35,7 @@ class BaseEntity extends Entity{
 	
 	// map GROUP_CONCAT fields to an array of objects (or Entities)
 	// ex: $users = $entity->csvMap(['user_ids'=>'user_id', 'user_emails'=>'user_email'], 'App\Entities\User');
-	public function csvMap(array $map, string $className='object', $removeAttr=FALSE, string $separator=','){
+	public function csvMap(array $map, string $className='object', $removeAttr=FALSE, string $separator=','):array{
 		$temp = [];
 		$longest = 0;
 		foreach($map as $attr => $newProp){
@@ -76,17 +76,16 @@ class BaseEntity extends Entity{
 		}
 		// generate entity attributes
 		$attr = [];
+		$deleteAttr = [];
 		foreach($prefixes as $prefix){
 			$prefixLen = strlen($prefix);
 			foreach($this->attributes as $key=>$val){
 				if(substr($key, 0, $prefixLen) === $prefix){
+					if($removeAttr) $deleteAttr[] = $key;
 					if($removePrefix){
 						$key = substr($key, $prefixLen);
 					}
 					$attr[$key] = $val;
-					if($removeAttr){
-						unset($this->attributes[$key]);
-					}
 				}
 			}
 		}
@@ -94,17 +93,28 @@ class BaseEntity extends Entity{
 		if(is_a($entity, '\CodeIgniter\Entity\Entity')){
 			$entity->setAttributes($attr); // using this method makes the attributes "original", ie. not changed from database
 		}
+		// delete attributes
+		if($deleteAttr){
+			$newAttr = clone $this->attributes;
+			foreach($this->attributes as $key=>$val){
+				if(in_array($key, $deleteAttr)){
+					unset($newAttr[$key]);
+				}
+			}
+			$this->setAttributes($newAttr); // make attributes "original"
+		}
 		return $entity;
 	}
 	
 	public function stripAliasPrefix(string $aliasPrefix){
+		$newAttr = clone $this->attributes;
 		$prefixLen = strlen($aliasPrefix);
 		foreach($this->attributes as $attr=>$val){
 			if(substr($attr, 0, $prefixLen) === $aliasPrefix){
-				$this->attributes[substr($attr, $prefixLen)] = $val;
-				unset($this->attributes[$attr]);
+				$newAttr[substr($attr, $prefixLen)] = $val;
+				unset($newAttr[$attr]);
 			}
 		}
-		$this->syncOriginal();
+		$this->setAttributes($newAttr); // make attributes "original"
 	}
 }
