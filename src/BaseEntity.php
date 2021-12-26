@@ -35,7 +35,7 @@ class BaseEntity extends Entity{
 	
 	// map GROUP_CONCAT fields to an array of objects (or Entities)
 	// ex: $users = $entity->csvMap(['user_ids'=>'user_id', 'user_emails'=>'user_email'], 'App\Entities\User');
-	public function csvMap(array $map, string $className='object', string $separator=','){
+	public function csvMap(array $map, string $className='object', $removeAttr=FALSE, string $separator=','){
 		$temp = [];
 		$longest = 0;
 		foreach($map as $attr => $newProp){
@@ -43,14 +43,16 @@ class BaseEntity extends Entity{
 			if(!array_key_exists($attr, $this->attributes)){
 				throw new \Exception("Entity does not have '$attr' attribute (check database select)");
 			}
-			if(empty($this->attributes[$attr])){
-				continue;
+			if(!empty($this->attributes[$attr])){
+				$val = $this->attributes[$attr];
+				if(!is_array($val)) $val = explode($separator, $val);
+				// do NOT use array merge!
+				$temp[$newProp] += $val;
+				if(count($temp[$newProp]) > $longest) $longest = count($temp[$newProp]);
 			}
-			$val = $this->attributes[$attr];
-			if(!is_array($val)) $val = explode($separator, $val);
-			// do NOT use array merge!
-			$temp[$newProp] += $val;
-			if(count($temp[$newProp]) > $longest) $longest = count($temp[$newProp]);
+			if($removeAttr){
+				unset($this->attributes[$attr]);
+			}
 		}
 		$result = [];
 		for($i=0; $i<$longest; $i++){
