@@ -49,6 +49,7 @@ class BaseEntity extends Entity{
 			}
 			if($removeAttr){
 				unset($this->attributes[$attr]);
+				unset($this->original[$attr]);
 			}
 		}
 		$result = [];
