@@ -40,7 +40,8 @@ class BaseEntity extends Entity{
 		$longest = 0;
 		foreach($map as $attr => $newProp){
 			if(!isset($temp[$newProp])) $temp[$newProp] = [];
-			if(!empty($this->attributes[$attr])){
+			// don't use empty() here, in case we get a falsy string like "0"
+			if(isset($this->attributes[$attr]) && $this->attributes[$attr] !== "" && $this->attributes[$attr] !== NULL){
 				$val = $this->attributes[$attr];
 				if(!is_array($val)) $val = explode($separator, $val);
 				// do NOT use array merge!
