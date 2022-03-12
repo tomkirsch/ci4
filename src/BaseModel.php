@@ -426,17 +426,22 @@ AND $whereField IN($innerSelect)
 	}
 
 	// set primary key to NULL or delete from the given tables
-	protected function deleteFromTables(BaseEntity $entity, array $deleteTables, array $nullTables = [])
+	protected function deleteFromTables(BaseEntity $entity, array $deleteTables, array $nullTables = []): bool
 	{
 		$pk = $this->primaryKey();
 		if (empty($pk)) throw new \Exception("Primary key is NULL or empty.");
 		if (empty($entity->$pk)) throw new \Exception("Entity's primary key is NULL or empty.");
 		foreach ($nullTables as $table) {
-			$this->db->table($table)->set($pk, NULL)->where($pk, $entity->$pk)->update();
+			if (!$this->db->table($table)->set($pk, NULL)->where($pk, $entity->$pk)->update()) {
+				return FALSE;
+			}
 		}
 		foreach ($deleteTables as $table) {
-			$this->db->table($table)->where($pk, $entity->$pk)->delete();
+			if (!$this->db->table($table)->where($pk, $entity->$pk)->delete()) {
+				return FALSE;
+			}
 		}
+		return TRUE;
 	}
 
 	// utility - add a set of unique fields
