@@ -1,162 +1,179 @@
-<?php namespace Tomkirsch\Crud;
+<?php
+
+namespace Tomkirsch\Crud;
 /*
 	CRUD BaseModel
 	Ensure your subclassed models set their $validationRules	
 */
+
 use CodeIgniter\I18n\Time;
 use CodeIgniter\Model;
 use CodeIgniter\Database\ConnectionInterface;
 use CodeIgniter\Validation\ValidationInterface;
 
-class BaseModel extends Model{
-	
-	public static function makeDictionary(array $list, string $idField):array{
+class BaseModel extends Model
+{
+
+	public static function makeDictionary(array $list, string $idField): array
+	{
 		$dict = [];
-		foreach($list as $item){
+		foreach ($list as $item) {
 			$id = is_array($item) ? $item[$idField] : $item->{$idField};
 			$dict[$id] = $item;
 		}
 		return $dict;
 	}
-	
+
 	protected $uniqueFields		= [];		// unique field functionality, see joinModel()
-	
+
 	protected $prefix; 						// prefix to be used in all regular DB fields (ex: 'user_')
 	protected $allowedInRules	= FALSE; 	// set $allowedFields from $validationRules keys
-	
+
 	// preferred column names
 	protected $createdField 	= 'created';
 	protected $updatedField 	= 'modified';
 	protected $deletedField 	= NULL;
-	
-	public function __construct(ConnectionInterface &$db = null, ValidationInterface $validation = null){
+
+	public function __construct(ConnectionInterface &$db = null, ValidationInterface $validation = null)
+	{
 		parent::__construct($db, $validation);
 		// prefix CRUD fields if they are set on this model
-		if(!empty($this->prefix)){
-			foreach([
+		if (!empty($this->prefix)) {
+			foreach ([
 				'primaryKey',
 				'createdField',
 				'updatedField',
 				'deletedField',
-			] as $field){
-				if(!empty($this->{$field}) && !stristr($this->{$field}, $this->prefix)){
-					$this->{$field} = $this->prefix.$this->{$field};
+			] as $field) {
+				if (!empty($this->{$field}) && !stristr($this->{$field}, $this->prefix)) {
+					$this->{$field} = $this->prefix . $this->{$field};
 				}
 			}
 		}
 		// set $allowedFields from rule keys
-		if($this->allowedInRules && !empty($this->validationRules)){
+		if ($this->allowedInRules && !empty($this->validationRules)) {
 			$this->allowedFields = array_merge($this->allowedFields, array_keys($this->validationRules));
 		}
 	}
-	
+
 	// if using unique field functionality, you should reset() before making a query
-	public function reset(){
+	public function reset()
+	{
 		$this->resetUniqueFields()->resetQuery();
 		return $this;
 	}
-	public function resetUniqueFields(){
+	public function resetUniqueFields()
+	{
 		$this->uniqueFields = [];
 		return $this;
 	}
-	
+
 	// getter - expose the validation rules for usage by other models, etc
-	public function validationRules():array{
+	public function validationRules(): array
+	{
 		return $this->validationRules;
 	}
-	
+
 	// getter - simply get the names of the columns from validationRules
-	public function columns(bool $includePrimary=TRUE):array{
+	public function columns(bool $includePrimary = TRUE): array
+	{
 		$cols = array_keys($this->validationRules);
-		
+
 		// created/modified/deleted columns are not usually in the rules
-		if($this->createdField) $cols[] = $this->createdField;
-		if($this->updatedField) $cols[] = $this->updatedField;
-		if($this->deletedField) $cols[] = $this->deletedField;
-		
+		if ($this->createdField) $cols[] = $this->createdField;
+		if ($this->updatedField) $cols[] = $this->updatedField;
+		if ($this->deletedField) $cols[] = $this->deletedField;
+
 		// place primary key at the beginning of the array
-		if($includePrimary && $this->primaryKey){
+		if ($includePrimary && $this->primaryKey) {
 			array_unshift($cols, $this->primaryKey);
 		}
 		return $cols;
 	}
-	
+
 	// expose the table, and also allow us to change the table on the fly, useful for aliases
-	public function table(?string $val=NULL){
-		if($val !== NULL){
+	public function table(?string $val = NULL)
+	{
+		if ($val !== NULL) {
 			$this->table = $val;
 			return $this;
-		}else{
+		} else {
 			return $this->table;
 		}
 	}
-	
+
 	// expose pk, prefix
-	public function primaryKey():?string{
+	public function primaryKey(): ?string
+	{
 		return $this->primaryKey;
 	}
-	public function prefix():?string{
+	public function prefix(): ?string
+	{
 		return $this->prefix;
 	}
-	
+
 	// get the next autoincrement
-	public function nextAutoIncrement():int{
+	public function nextAutoIncrement(): int
+	{
 		$dbName = $this->getDatabase();
 		$sql = "SELECT AUTO_INCREMENT FROM information_schema.tables WHERE table_name='$this->table' AND table_schema='$dbName'";
 		$row = $this->db->query($sql)->getRow();
-		if(!$row){
+		if (!$row) {
 			throw new \Exception("Cannot find AUTO_INCREMENT in $dbName.$this->table");
 		}
 		return intval($row->AUTO_INCREMENT);
 	}
-	
+
 	// override - if the Entity's primary key is EMPTY, we insert (CI's method just did isset()). Helpful when POSTing an empty string id
-	public function save($data): bool{
-		if (is_object($data) && $this->primaryKey && isset($data->{$this->primaryKey}) && empty($data->{$this->primaryKey})){
+	public function save($data): bool
+	{
+		if (is_object($data) && $this->primaryKey && isset($data->{$this->primaryKey}) && empty($data->{$this->primaryKey})) {
 			unset($data->{$this->primaryKey});
 		}
 		return parent::save($data);
 	}
-	
+
 	// utility - create an associative array using primary keys
-	public function getDictionary(array $list): array{
-		if(!$this->primaryKey) throw new \Exception("Cannot use getDictionary() on a model with no primaryKey.");
+	public function getDictionary(array $list): array
+	{
+		if (!$this->primaryKey) throw new \Exception("Cannot use getDictionary() on a model with no primaryKey.");
 		return self::makeDictionary($list, $this->primaryKey);
 	}
-	
+
 	/*
 		Sync a simple lookup table. 
 		IMPORTANT: $common_data is used as a WHERE clause on delete! Use at your own risk.
 			$this->sync_one2many('foos2bars', ['foo_id'=>1], 'bar_id', [12,13], [5,13,14]); // inserts 12, deletes 5 & 14
 	*/
-	public function syncOneToMany(string $lookuptable, array $common_data, string $remote_id_field, $ids=[], $old_ids=[]) :array{
-		if(!is_array($ids)){
+	public function syncOneToMany(string $lookuptable, array $common_data, string $remote_id_field, $ids = [], $old_ids = []): array
+	{
+		if (!is_array($ids)) {
 			$ids = empty($ids) ? [] : explode(',', $ids);
 		}
-		if(!is_array($old_ids)){
+		if (!is_array($old_ids)) {
 			$old_ids = empty($old_ids) ? [] : explode(',', $old_ids);
 		}
 		$insert = array_diff($ids, $old_ids);
 		$delete = array_diff($old_ids, $ids);
-		
-		if(count($delete)){
+
+		if (count($delete)) {
 			$this->db->table($lookuptable)->where($common_data)->whereIn($remote_id_field, $delete)->delete();
 		}
-		
-		if(count($insert)){
+
+		if (count($insert)) {
 			$data = [];
-			foreach($insert as $id){
+			foreach ($insert as $id) {
 				$data[] = array_merge($common_data, [$remote_id_field => $id]);
 			}
 			$this->db->table($lookuptable)->insertBatch($data);
 		}
-		
+
 		return [
-			'inserted'=>$insert,
-			'deleted'=>$delete,
+			'inserted' => $insert,
+			'deleted' => $delete,
 		];
 	}
-	
+
 	/*
 		This method simplifies joins by using a model's columns, taken from $validationRules. You MUST call selectUniqueFields() afterwards. Ex:
 		$fooModel
@@ -169,24 +186,25 @@ class BaseModel extends Model{
 			->findAll()
 		;
 	*/
-	public function joinModel(string $modelName, string $clause='', string $join='left', string $alias='', string $prefix='', string $derivedSql='', bool $escape=NULL){
+	public function joinModel(string $modelName, string $clause = '', string $join = 'left', string $alias = '', string $prefix = '', string $derivedSql = '', bool $escape = NULL)
+	{
 		// we'll assume it's a App\Models namespace. If not, pass the FQN
-		if(!strstr($modelName, '\\')) $modelName = '\App\Models\\'.$modelName;
+		if (!strstr($modelName, '\\')) $modelName = '\App\Models\\' . $modelName;
 		$otherModel = new $modelName();
 		$otherTable = $otherModel->table();
-		
-		if(empty($clause)){
-			if(!$this->primaryKey) throw new \Exception("You must supply a join clause on a model with no primaryKey.");
+
+		if (empty($clause)) {
+			if (!$this->primaryKey) throw new \Exception("You must supply a join clause on a model with no primaryKey.");
 			$clause = "$this->table.$this->primaryKey = $otherTable.$this->primaryKey";
 		}
-		if(empty($alias)){
+		if (empty($alias)) {
 			$alias = $joinTable = $otherTable;
-		}else{
+		} else {
 			$joinTable = "$otherTable AS $alias";
 		}
-		if(!empty($derivedSql)){
+		if (!empty($derivedSql)) {
 			// wrap the SQL in parentheses, if needed
-			if(substr($derivedSql, 0, 1) !== '('){
+			if (substr($derivedSql, 0, 1) !== '(') {
 				$derivedSql = "($derivedSql)";
 			}
 			$joinTable = "$derivedSql AS $alias";
@@ -197,13 +215,13 @@ class BaseModel extends Model{
 		$this->join($joinTable, $clause, $join, $escape);
 		// now add the columns to our unique dictionary
 		$dict = [];
-		foreach($otherModel->columns(TRUE) as $col){
-			$dict["$alias.$col"] = $prefix.$col;
+		foreach ($otherModel->columns(TRUE) as $col) {
+			$dict["$alias.$col"] = $prefix . $col;
 		}
 		$this->addUniqueSet($modelName, $dict);
 		return $this;
 	}
-	
+
 	/*
 	 Perform a join with unique fields, which can transform them with a new table alias and/or prefixes. Ex:
 	 	// create a subquery with a model
@@ -211,11 +229,12 @@ class BaseModel extends Model{
 		// now perform the join using the subquery. All unique fields from the other model(s) will be incorporated into the SELECT
 	 	$thirdModel->joinUnique($firstModel->uniqueFields(), $firstSql, 'third.id = second.id')->selectUniqueFields()->findAll();
 	*/
-	public function joinUnique(array $uniqueFields, string $tableOrSql, string $clause, string $join='left', string $alias='', string $prefix='', bool $escape=NULL){
-		if(!empty($alias)){
+	public function joinUnique(array $uniqueFields, string $tableOrSql, string $clause, string $join = 'left', string $alias = '', string $prefix = '', bool $escape = NULL)
+	{
+		if (!empty($alias)) {
 			// was custom SQL passed instead of a table name?
-			if(strstr($tableOrSql, ' ')){
-				if(substr($tableOrSql, 0, 1) !== '('){
+			if (strstr($tableOrSql, ' ')) {
+				if (substr($tableOrSql, 0, 1) !== '(') {
 					$tableOrSql = "($tableOrSql)";
 					$escape = FALSE;
 				}
@@ -223,23 +242,23 @@ class BaseModel extends Model{
 			}
 		}
 		$this->join($tableOrSql, $clause, $join, $escape);
-		foreach($uniqueFields as $modelName=>$set){
+		foreach ($uniqueFields as $modelName => $set) {
 			$dict = [];
-			foreach($set as $col=>$field){
-				if(!empty($alias)){
+			foreach ($set as $col => $field) {
+				if (!empty($alias)) {
 					// alter this to use the given alias/prefix
 					$dot = strpos($col, '.');
-					$col = $alias.substr($col, $dot);
+					$col = $alias . substr($col, $dot);
 				}
 				// add the prefixed field to our array
-				$dict[$col] = $prefix.$field;
+				$dict[$col] = $prefix . $field;
 			}
 			$this->addUniqueSet($modelName, $dict);
 		}
 		// now you can call selectUniqueFields()
 		return $this;
 	}
-	
+
 	/*
 	 Getter - expose the uniqueFields array.
 	 You can also transform the model's unique fields that were taken with an alias. Ex:
@@ -251,19 +270,20 @@ class BaseModel extends Model{
 		// now perform the join using the subquery. All unique fields from the other model(s) will be incorporated into the SELECT
 	 	$finalModel->joinUnique($fields, $secondSql, 'third.id = second.id')->selectUniqueFields()->findAll();
 	*/
-	public function uniqueFields(?string $alias=NULL):array{
-		if(empty($alias)){
+	public function uniqueFields(?string $alias = NULL): array
+	{
+		if (empty($alias)) {
 			return $this->uniqueFields;
 		}
 		// we use "sets" so that we can overwrite columns with the last one specified in the chain
 		$dict = [];
-		foreach($this->uniqueFields as $modelName=>$set){
+		foreach ($this->uniqueFields as $modelName => $set) {
 			$newSet = [];
-			foreach($set as $col=>$field){
+			foreach ($set as $col => $field) {
 				// find all fields that have the prefix, and change the source column
-				if(strstr($field, $alias)){
+				if (strstr($field, $alias)) {
 					$dot = strpos($col, '.');
-					$col = substr($col, 0, $dot).'.'.$field;
+					$col = substr($col, 0, $dot) . '.' . $field;
 				}
 				$newSet[$col] = $field;
 			}
@@ -271,18 +291,19 @@ class BaseModel extends Model{
 		}
 		return $dict;
 	}
-	
+
 	// add unique fields from THIS model's rules/columns. This is called by default in selectUnique()
-	public function addUniqueSelf(string $alias='', string $prefix=''){
-		if(empty($alias)) $alias = $this->table;
+	public function addUniqueSelf(string $alias = '', string $prefix = '')
+	{
+		if (empty($alias)) $alias = $this->table;
 		$dict = [];
-		foreach($this->columns(TRUE) as $col){
-			$dict["$alias.$col"] = $prefix.$col;
+		foreach ($this->columns(TRUE) as $col) {
+			$dict["$alias.$col"] = $prefix . $col;
 		}
 		$this->addUniqueSet(get_class($this), $dict);
 		return $this;
 	}
-	
+
 	/*
 		All the table's columns are selected by default with unique fields. This lets you only choose the ones you want.
 		You can also pass the fields in selectUnique(), but this method allows you to specify which model to filter.
@@ -297,53 +318,55 @@ class BaseModel extends Model{
 		// remove ALL selects for BarModel and just do the join
 		$fooModel->joinModel('BarModel')->filterUnique([], 'BarModel')
 	*/
-	public function filterUnique(array $fields, ?string $modelName=NULL){
-		if($modelName) $modelName = $this->prepClassName($modelName);
-		foreach($this->uniqueFields as $model=>$set){
-			if($modelName){
+	public function filterUnique(array $fields, ?string $modelName = NULL)
+	{
+		if ($modelName) $modelName = $this->prepClassName($modelName);
+		foreach ($this->uniqueFields as $model => $set) {
+			if ($modelName) {
 				// if user joined a model more than once, it'll be suffixed with a number
-				if(!preg_match("/$modelName(\d?)/", $modelName)){
+				if (!preg_match("/$modelName(\d?)/", $modelName)) {
 					continue; // this set is from a different model, skip
 				}
 			}
 			// was an empty array passed?
-			if(empty($fields)){
+			if (empty($fields)) {
 				unset($this->uniqueFields[$model]);
-			}else{
+			} else {
 				// otherwise we intersect
 				$this->uniqueFields[$model] = array_intersect($this->uniqueFields[$model], $fields);
 			}
 		}
 		return $this;
 	}
-	
+
 	// call this after all unique fields have been configured
-	public function selectUnique(?array $fields=NULL, bool $selectThisTable=TRUE){
+	public function selectUnique(?array $fields = NULL, bool $selectThisTable = TRUE)
+	{
 		// usually, we want to select this model's data
-		if($selectThisTable){
+		if ($selectThisTable) {
 			$this->addUniqueSelf();
 		}
 		// were fields passed? then only get those
-		if(!empty($fields)){
+		if (!empty($fields)) {
 			$this->filterUnique($fields);
 		}
 		// loop through the sets and pick out the unique field names. 
 		// we use "sets" so that we can overwrite columns with the last one specified in the chain
 		$selects = [];
-		foreach($this->uniqueFields as $modelName=>$set){
-			foreach($set as $col=>$field){
+		foreach ($this->uniqueFields as $modelName => $set) {
+			foreach ($set as $col => $field) {
 				// if a field name was already taken, this will just overwrite it with the last used source
 				$selects[$field] = $col;
 			}
 		}
 		// perform active record select
-		foreach($selects as $field=>$col){
+		foreach ($selects as $field => $col) {
 			$this->select("$col AS $field");
 		}
 		// don't reset uniqueFields here, as you may need them for subqueries
 		return $this;
 	}
-	
+
 	// use nested subqueries to get the last row in another table. These tables MUST be properly indexed to run fast!!!
 	// $this->selectLastRow('ph_year', 'phs', 'ph_year');
 	// $this->selectLastRow('widget_id AS firstid', 'widgets', 'widget_date', 'MIN');
@@ -401,25 +424,40 @@ AND $whereField IN($innerSelect)
 			->where("$alias.$commonKey", "$table.$commonKey", FALSE) // $table will be read by the OUTER query - MAGIC!
 			->getCompiledSelect();
 	}
-	
-	
+
+	// set primary key to NULL or delete from the given tables
+	protected function deleteFromTables(BaseEntity $entity, array $deleteTables, array $nullTables = [])
+	{
+		$pk = $this->primaryKey();
+		if (empty($pk)) throw new \Exception("Primary key is NULL or empty.");
+		if (empty($entity->$pk)) throw new \Exception("Entity's primary key is NULL or empty.");
+		foreach ($nullTables as $table) {
+			$this->db->table($table)->set($pk, NULL)->where($pk, $entity->$pk)->update();
+		}
+		foreach ($deleteTables as $table) {
+			$this->db->table($table)->where($pk, $entity->$pk)->delete();
+		}
+	}
+
 	// utility - add a set of unique fields
-	protected function addUniqueSet(string $modelName, array $uniqueFields){
+	protected function addUniqueSet(string $modelName, array $uniqueFields)
+	{
 		$modelName = $this->prepClassName($modelName);
 		// ensure we don't overwrite stuff with the modelName key
 		$baseModelName = $modelName;
-		$i=0;
-		while(isset($this->uniqueFields[$modelName])){
-			$modelName = $baseModelName.(++$i);
+		$i = 0;
+		while (isset($this->uniqueFields[$modelName])) {
+			$modelName = $baseModelName . (++$i);
 		}
 		$this->uniqueFields[$modelName] = $uniqueFields;
 		return $this;
 	}
-	
+
 	// Strip namespace out of model class names. Needed because get_class() might return FQN, but users just pass simple model name. 
 	// Hoping this doesn't cause issues down the road.
-	protected function prepClassName(string $className):string{
-		if($pos = strrpos($className, '\\')) return substr($className, $pos + 1);
-    	return $className;
+	protected function prepClassName(string $className): string
+	{
+		if ($pos = strrpos($className, '\\')) return substr($className, $pos + 1);
+		return $className;
 	}
 }
