@@ -88,11 +88,11 @@ class BaseEntity extends Entity
 			$prefixLen = strlen($prefix);
 			foreach ($this->attributes as $key => $val) {
 				if (substr($key, 0, $prefixLen) === $prefix) {
+					if ($removeAttr) $deleteAttr[] = $key;
 					if ($removePrefix) {
 						$key = substr($key, $prefixLen);
 					}
 					$attr[$key] = $val;
-					if ($removeAttr) $deleteAttr[] = $key;
 				}
 			}
 		}
