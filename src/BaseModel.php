@@ -324,7 +324,7 @@ class BaseModel extends Model
 		foreach ($this->uniqueFields as $model => $set) {
 			if ($modelName) {
 				// if user joined a model more than once, it'll be suffixed with a number
-				if (!preg_match("/$modelName(\d?)/", $modelName)) {
+				if (!preg_match("/$modelName(\d?)/", $model)) {
 					continue; // this set is from a different model, skip
 				}
 			}
