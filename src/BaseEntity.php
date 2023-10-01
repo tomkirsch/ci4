@@ -108,11 +108,14 @@ class BaseEntity extends Entity
 					unset($newAttr[$key]);
 				}
 			}
-			$this->setAttributes($newAttr); // make attributes "original"
+			$this->injectRawData($newAttr); // make attributes "original"
 		}
 		return $entity;
 	}
 
+	/**
+	 * Removes prefix from all attributes
+	 */
 	public function stripAliasPrefix(string $aliasPrefix)
 	{
 		$newAttr = $this->attributes;
@@ -123,6 +126,19 @@ class BaseEntity extends Entity
 				unset($newAttr[$attr]);
 			}
 		}
-		$this->setAttributes($newAttr); // make attributes "original"
+		$this->injectRawData($newAttr); // make attributes "original"
+	}
+
+	/**
+	 * Return the entity with HTML data attributes. Pass an array of fields to limit to only those
+	 */
+	public function getHtmlData(array $fields = []): string
+	{
+		$html = '';
+		foreach ($this->attributes as $key => $val) {
+			if (!empty($fields) && !in_array($key, $fields)) continue;
+			$html .= ' data-' . $key . '="' . esc($val, "attr") . '"';
+		}
+		return $html;
 	}
 }
