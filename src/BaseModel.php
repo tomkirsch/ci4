@@ -79,9 +79,9 @@ class BaseModel extends Model
 		$cols = array_keys($this->validationRules);
 
 		// created/modified/deleted columns are not usually in the rules
-		if ($this->createdField) $cols[] = $this->createdField;
-		if ($this->updatedField) $cols[] = $this->updatedField;
-		if ($this->deletedField) $cols[] = $this->deletedField;
+		if (!empty($this->createdField)) $cols[] = $this->createdField;
+		if (!empty($this->updatedField)) $cols[] = $this->updatedField;
+		if (!empty($this->deletedField)) $cols[] = $this->deletedField;
 
 		// place primary key at the beginning of the array
 		if ($includePrimary && $this->primaryKey) {
