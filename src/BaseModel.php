@@ -6,7 +6,6 @@ namespace Tomkirsch\Crud;
 	Ensure your subclassed models set their $validationRules	
 */
 
-use CodeIgniter\I18n\Time;
 use CodeIgniter\Model;
 use CodeIgniter\Database\ConnectionInterface;
 use CodeIgniter\Validation\ValidationInterface;
@@ -32,7 +31,7 @@ class BaseModel extends Model
 	// preferred column names
 	protected $createdField 	= 'created';
 	protected $updatedField 	= 'modified';
-	protected $deletedField 	= NULL;
+	protected $deletedField 	= '';
 
 	public function __construct(ConnectionInterface &$db = null, ValidationInterface $validation = null)
 	{
