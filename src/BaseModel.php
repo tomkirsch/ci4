@@ -55,6 +55,12 @@ class BaseModel extends Model
 		}
 	}
 
+	// abstract method in CI 4.5
+	public function getIdValue($row)
+	{
+		return is_array($row) ? $row[$this->primaryKey] : $row->{$this->primaryKey};
+	}
+
 	// if using unique field functionality, you should reset() before making a query
 	public function reset()
 	{
