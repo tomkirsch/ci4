@@ -55,11 +55,14 @@ class BaseModel extends Model
 		}
 	}
 
+	/*
 	// abstract method in CI 4.5
+	// WARNING: this causes primary ID keys of ZERO! 
 	public function getIdValue($row)
 	{
 		return is_array($row) ? $row[$this->primaryKey] : $row->{$this->primaryKey};
 	}
+	*/
 
 	// if using unique field functionality, you should reset() before making a query
 	public function reset()
