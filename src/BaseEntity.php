@@ -98,7 +98,7 @@ class BaseEntity extends Entity
 		}
 		$entity = new $className();
 		if (is_a($entity, '\CodeIgniter\Entity\Entity')) {
-			$entity->setAttributes($attr); // using this method makes the attributes "original", ie. not changed from database
+			$entity->injectRawData($attr); // using this method makes the attributes "original", ie. not changed from database
 		}
 		// delete attributes
 		if ($deleteAttr) {
